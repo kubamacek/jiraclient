@@ -103,6 +103,10 @@ def parse_args():
                         metavar=('issue', 'description', 'assignee'),
                         help='Create a review subtask for given issue. \
                               To create more subtasks, separate reviewers by comma.')
+    parser.add_argument('--issue-review-task', nargs=3,
+                        metavar=('issue', 'description', 'assignee'),
+                        help='Create a review task for given issue. \
+                              To create more tasks, separate reviewers by comma.')
     parser.add_argument('--issue-label-add', nargs=2, metavar=('issue', 'label'),
                         help='Add label for given issue.')
     parser.add_argument('--issue-label-remove', nargs=2, metavar=('issue', 'label'),
@@ -230,6 +234,28 @@ if __name__ == "__main__":
                 'description': description,
                 'labels': ['REVIEW'],
                 'parent': {'key': issue.key},
+                'assignee': {'name': assignee},
+                'components': [{'name': component.name} for component in issue.fields.components]
+            }
+            logger.info("STARTED - create review subtask for {} under {} issue"
+                        .format(assignee, issue.key))
+            review_task = jira.create_issue(fields=review_task_dict)
+            print_issue_info(review_task)
+            jira.create_issue_link('is review for', review_task, issue)
+        logger.info("FINISHED")
+        sys.exit(0)
+
+    if args.issue_review_task:
+        issue, description, assignees = args.issue_review_task
+        issue = jira.issue(issue)
+        assignees = assignees.split(',')
+        for assignee in assignees:
+            review_task_dict = {
+                'project': {'id': issue.fields.project.id},
+                'issuetype': {'name': 'Task'},
+                'summary': '[REVIEW] {}'.format(issue.fields.summary),
+                'description': description,
+                'labels': ['REVIEW'],
                 'assignee': {'name': assignee},
                 'components': [{'name': component.name} for component in issue.fields.components]
             }
